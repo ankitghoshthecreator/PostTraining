@@ -1,0 +1,27 @@
+stages:
+  - id: 1
+    file: stage_1_english.jsonl
+    epochs: 3
+    replay_ratio: 0.0
+  - id: 2
+    file: stage_2_summarization.jsonl
+    epochs: 3
+    replay_ratio: 0.2
+  - id: 3
+    file: stage_3_grammar.jsonl
+    epochs: 3
+    replay_ratio: 0.3
+  - id: 4
+    file: stage_4_punctuation.jsonl
+    epochs: 3
+    replay_ratio: 0.3
+  - id: 5
+    file: stage_5_conversation.jsonl
+    epochs: 3
+    replay_ratio: 0.4
+
+max_steps_per_stage: 2000
+
+early_stop:
+  metric: probe_reward
+  patience: 3

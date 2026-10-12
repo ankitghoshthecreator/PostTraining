@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "post-training-alignment-toolkit"
+version = "0.1.0"
+description = "A reproducible post-training alignment pipeline for small open-weight LLMs (SFT, RLAIF flywheel, and Tiered Eval Harness under 4GB VRAM)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Ankit Ghosh"}
+]
+dependencies = [
+    "torch",
+    "transformers",
+    "peft",
+    "bitsandbytes",
+    "accelerate",
+    "datasets",
+    "pydantic>=2.0",
+    "groq",
+    "httpx",
+    "ollama",
+    "rouge-score",
+    "bert-score",
+    "scikit-learn",
+    "pandas",
+    "pyyaml",
+    "tenacity",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "black",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["trainer*", "rlaif*", "validator*", "eval*", "scripts*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "network: mark test as requiring network/API access",
+]

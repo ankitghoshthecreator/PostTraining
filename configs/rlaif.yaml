@@ -1,0 +1,10 @@
+severity_gate:
+  - CRITICAL
+  - HIGH
+priority_max: 5
+max_iterations: 200
+requests_per_iteration: 40
+samples_per_request: 8
+min_new_samples: 5
+regress_tolerance: 0.05
+target_reward: 0.95

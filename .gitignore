@@ -1,0 +1,40 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Checkpoints and Models
+checkpoints/
+trainer/checkpoints/
+*.pt
+*.bin
+*.safetensors
+
+# Logs and Metrics
+logs/
+*.csv
+wandb/
+
+# Data runtime output
+data/rejected/
+data/synthetic/
+
+# Environment and secrets
+.env
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# OS and Editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

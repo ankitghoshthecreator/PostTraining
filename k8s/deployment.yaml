@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rlaif-evaluator
+  labels:
+    app: rlaif-evaluator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rlaif-evaluator
+  template:
+    metadata:
+      labels:
+        app: rlaif-evaluator
+    spec:
+      containers:
+        - name: evaluator
+          image: rlaif-evaluator:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: GROQ_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: rlaif-secrets
+                  key: groq-api-key
+                  optional: true
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20

@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: rlaif-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+
+  evaluator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: evaluator
+    container_name: rlaif-evaluator
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ../configs:/app/configs:ro
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../trainer/checkpoints:/app/trainer/checkpoints:ro
+    depends_on:
+      - ollama
+
+volumes:
+  ollama-models:

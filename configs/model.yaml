@@ -1,0 +1,30 @@
+model_name: "Qwen/Qwen2.5-1.5B-Instruct"
+
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_use_double_quant: true
+  bnb_4bit_compute_dtype: "float16"
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  task_type: "CAUSAL_LM"
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+
+training:
+  learning_rate: 2.0e-4
+  weight_decay: 0.01
+  warmup_ratio: 0.05
+  gradient_accumulation_steps: 8
+  per_device_train_batch_size: 1
+  gradient_checkpointing: true
+  use_cache: false
+  max_grad_norm: 1.0
+  seed: 42
+  max_seq_len: 512

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rlaif-evaluator-config
+data:
+  eval.yaml: |
+    local_pass_threshold: 0.70
+    rubric_version: "B"
+    teacher_model: "llama-3-70b"

@@ -1,0 +1,3 @@
+local_pass_threshold: 0.70
+rubric_version: "B"
+teacher_model: "llama-3-70b"

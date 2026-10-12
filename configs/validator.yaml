@@ -1,0 +1,5 @@
+min_chars: 10
+max_chars: 4096
+bigram_repetition_max: 0.35
+jaccard_circularity_max: 0.85
+dedup: sha256
