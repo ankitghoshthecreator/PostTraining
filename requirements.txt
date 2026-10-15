@@ -17,3 +17,4 @@ pytest
 pytest-cov
 tenacity
 python-dotenv
+streamlit

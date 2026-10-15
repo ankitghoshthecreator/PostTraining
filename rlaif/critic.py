@@ -92,7 +92,13 @@ class TeacherCritic:
 
         # If no API key is provided, execute heuristic fallback critic
         if not self.api_key:
-            return self._heuristic_fallback_critique(prompt, response, task, reference)
+            result = self._heuristic_fallback_critique(prompt, response, task, reference)
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    f.write(result.model_dump_json())
+            except Exception:
+                pass
+            return result
 
         try:
             from groq import Groq

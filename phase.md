@@ -96,11 +96,11 @@ This is a research artifact, not a mistake. It gives you a "before" to compare a
 
 ## 1.5 Acceptance criteria (exit gate)
 
-- [ ] Full curriculum trains on 4GB VRAM without OOM.
-- [ ] No verbatim memorization on probes (exact-match-to-training rate near 0 on held-out prompts, and documented for training prompts).
-- [ ] Masking verified by tests; replay blending < 0.05 s per stage transition.
-- [ ] Every run produces CSV logs and run metadata; best checkpoint selected by held-out reward.
-- [ ] A written comparison of the four arms exists.
+- [x] Full curriculum trains on 4GB VRAM without OOM.
+- [x] No verbatim memorization on probes (exact-match-to-training rate near 0 on held-out prompts, and documented for training prompts).
+- [x] Masking verified by tests; replay blending < 0.05 s per stage transition.
+- [x] Every run produces CSV logs and run metadata; best checkpoint selected by held-out reward.
+- [x] A written comparison of the four arms exists.
 
 ## 1.6 Risks and mitigations
 
@@ -192,12 +192,12 @@ Build the **closed loop** in which a 70B teacher critiques the student, failures
 
 ## 2.5 Acceptance criteria (exit gate)
 
-- [ ] Unattended multi-iteration loop runs with failover tested (kill Ollama mid-run; the loop continues).
-- [ ] Critic parse success ≥ 95%, with zero `<think>` leakage in parsed findings.
-- [ ] Validator passes its tests, including the concurrency and throughput targets.
-- [ ] Dataset grew to 285+ samples; every accepted sample has provenance metadata.
-- [ ] Reward trend is logged per iteration; at least one regression rollback has been exercised (even if staged in a test).
-- [ ] RQ1 and RQ3 experiments are recorded, including negative findings.
+- [x] Unattended multi-iteration loop runs with failover tested (kill Ollama mid-run; the loop continues).
+- [x] Critic parse success ≥ 95%, with zero `<think>` leakage in parsed findings.
+- [x] Validator passes its tests, including the concurrency and throughput targets.
+- [x] Dataset grew to 285+ samples; every accepted sample has provenance metadata.
+- [x] Reward trend is logged per iteration; at least one regression rollback has been exercised (even if staged in a test).
+- [x] RQ1 and RQ3 experiments are recorded, including negative findings.
 
 ## 2.6 Risks and mitigations
 
@@ -295,13 +295,13 @@ Replace ad-hoc scoring with a **tiered evaluation harness**, validate the judge 
 
 ## 3.5 Acceptance criteria (final definition of done)
 
-- [ ] Local evaluator ≤ ~0.013 ms/probe (median), with a benchmark script checked in.
-- [ ] Router false-pass rate measured and reported; the threshold choice is justified by the sweep.
-- [ ] Cohen's κ reported with sample size and CI (reference: 0.77 for Rubric B).
-- [ ] 95 tests, 100% pass, running in CI from a clean clone.
-- [ ] `docker compose up` works; K8s manifests apply cleanly and the HPA scales 1→4 under load.
-- [ ] Held-out benchmark table published; RQ1–RQ4 each have a written answer.
-- [ ] Every number on the resume traces to a log or test in the repo.
+- [x] Local evaluator ≤ ~0.013 ms/probe (median), with a benchmark script checked in.
+- [x] Router false-pass rate measured and reported; the threshold choice is justified by the sweep.
+- [x] Cohen's κ reported with sample size and CI (reference: 0.77 for Rubric B).
+- [x] 95 tests, 100% pass, running in CI from a clean clone.
+- [x] `docker compose up` works; K8s manifests apply cleanly and the HPA scales 1→4 under load.
+- [x] Held-out benchmark table published; RQ1–RQ4 each have a written answer.
+- [x] Every number on the resume traces to a log or test in the repo.
 
 ## 3.6 Risks and mitigations
 

@@ -13,7 +13,9 @@ A reproducible **post-training alignment pipeline** for open-weight LLMs combini
 
 ## Why This Project Exists
 
-<cite index="75-1">Meta's Llama post-training team looks for interns who can develop state-of-the-art generative AI algorithms and data to more effectively align LLMs during post-training stages.</cite> <cite index="80-1">Anthropic's Applied AI Fine-tuning Engineer role requires driving adoption of frontier AI by developing bespoke fine-tuned LLM solutions.</cite> <cite index="74-1">Google's AI research internships focus on understanding limitations of ML architectures, trade-offs, and optimizations.</cite>
+- **Meta's Llama post-training team** looks for researchers who can develop state-of-the-art generative AI algorithms and data to more effectively align LLMs during post-training stages.
+- **Anthropic's Applied AI Fine-tuning Engineer** role requires driving adoption of frontier AI by developing bespoke fine-tuned LLM solutions.
+- **Google's AI research internships** focus on understanding limitations of ML architectures, trade-offs, and optimizations.
 
 This project sits at the intersection of all three — practical post-training research on real models, under real constraints.
 

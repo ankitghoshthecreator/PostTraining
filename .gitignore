@@ -11,19 +11,23 @@ ENV/
 
 # Checkpoints and Models
 checkpoints/
-trainer/checkpoints/
+trainer/checkpoints/*
+!trainer/checkpoints/.gitkeep
 *.pt
 *.bin
 *.safetensors
 
 # Logs and Metrics
-logs/
+logs/*
+!logs/.gitkeep
 *.csv
 wandb/
 
 # Data runtime output
-data/rejected/
-data/synthetic/
+data/rejected/*
+!data/rejected/.gitkeep
+data/synthetic/*
+!data/synthetic/.gitkeep
 
 # Environment and secrets
 .env
