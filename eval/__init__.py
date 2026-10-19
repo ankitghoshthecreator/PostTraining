@@ -6,6 +6,7 @@ from eval.router import TieredRouter
 from eval.reward import RewardCalculator
 from eval.agreement import compute_cohen_kappa, compute_correlation
 from eval.metrics import compute_rouge_l, compute_exact_match, compute_normalized_edit_similarity
+from eval.multi_teacher import MultiTeacherEnsemble, MultiTeacherResult
 
 __all__ = [
     "LocalEvaluator",
@@ -13,6 +14,8 @@ __all__ = [
     "JudgeResult",
     "TieredRouter",
     "RewardCalculator",
+    "MultiTeacherEnsemble",
+    "MultiTeacherResult",
     "compute_cohen_kappa",
     "compute_correlation",
     "compute_rouge_l",

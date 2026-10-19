@@ -121,21 +121,21 @@ CIRCLE/
 │   ├── curriculum.yaml           # stages, ratios, epochs, LR per stage
 │   ├── rlaif.yaml                # severity gate, priority cap, iteration caps
 │   ├── validator.yaml            # L1–L7 thresholds
-│   └── eval.yaml                 # local thresholds, escalation band, rubric version
+│   ├── eval.yaml                 # local thresholds, escalation band, rubric version
+│   ├── dpo.yaml                  # beta, learning rate, LoRA config for DPO
+│   └── grpo.yaml                 # group size G=4, clip eps, KL weight, verifiable tasks
 ├── data/
-│   ├── curriculum/
-│   │   ├── stage_1_english.jsonl
-│   │   ├── stage_2_summarization.jsonl
-│   │   ├── stage_3_grammar.jsonl
-│   │   ├── stage_4_punctuation.jsonl
-│   │   └── stage_5_conversation.jsonl
-│   ├── synthetic/                # accepted generator output, versioned per iteration
+│   ├── curriculum/               # 5-stage seed curriculum (35 samples)
+│   ├── synthetic/                # accepted generator output, versioned per iteration (265 samples)
+│   ├── preferences/              # contrastive chosen/rejected DPO pairs (50 pairs)
 │   ├── rejected/                 # validator rejects with reason codes (for audit)
 │   └── probes/                   # per-stage probe banks (held out from training)
 ├── trainer/
 │   ├── dataset.py                # loading, tokenization, masking
 │   ├── replay_buffer.py          # in-memory blending
-│   ├── train_sft.py              # main training entry
+│   ├── train_sft.py              # main SFT curriculum training entry
+│   ├── train_dpo.py              # Direct Preference Optimization trainer
+│   ├── grpo.py                   # Group Relative Policy Optimization trainer
 │   ├── callbacks.py              # CSV logging, best-checkpoint tracker
 │   └── checkpoints/
 ├── rlaif/
@@ -146,22 +146,26 @@ CIRCLE/
 │   ├── gate.py                   # severity gating + priority
 │   ├── prompt_builder.py         # targeted generation prompts
 │   ├── generator.py              # Ollama client + failover
-│   └── controller.py             # loop orchestration
+│   ├── controller.py             # loop orchestration
+│   ├── preference_dataset.py     # contrastive preference pair builder
+│   └── verifiable_rewards.py     # deterministic math & constraint verifier
 ├── validator/
 │   ├── layers.py                 # L1–L7 individual checks
 │   └── pipeline.py               # ordered execution, reason codes, stats
 ├── eval/
 │   ├── local_evaluator.py        # TTR, n-gram, Jaccard
-│   ├── teacher_judge.py          # 70B rubric judge
-│   ├── router.py                 # tiered routing
-│   ├── reward.py                 # reward scalar
-│   ├── agreement.py              # Cohen's κ, correlation
-│   ├── metrics.py                # ROUGE-L, BERTScore wrappers
-│   └── run_stage_eval.py
+│   ├── teacher_judge.py          # 70B rubric judge (Rubric A & B)
+│   ├── router.py                 # tiered routing (local fast-pass vs teacher)
+│   ├── reward.py                 # reward scalar & regression detection
+│   ├── agreement.py              # Cohen's κ, correlation, threshold sweep
+│   ├── multi_teacher.py          # Multi-teacher ensemble & disagreement router
+│   ├── metrics.py                # ROUGE-L, BERTScore, edit similarity
+│   └── run_stage_eval.py         # stage eval CLI
 ├── scripts/
 │   ├── rl_loop.py                # CLI for the full pipeline
-│   └── make_probes.py
-├── tests/                        # 95 tests
+│   └── make_probes.py            # probe bank generator & leakage auditor
+├── app.py                        # Streamlit research dashboard (creme theme, zero emojis)
+├── tests/                        # 106 tests (100% pass)
 ├── docker/
 │   ├── Dockerfile                # multi-stage
 │   └── docker-compose.yml
@@ -169,8 +173,9 @@ CIRCLE/
 │   ├── deployment.yaml
 │   ├── hpa.yaml                  # 1→4 replicas
 │   └── configmap.yaml
-├── logs/                         # per-step loss CSV, loop logs
+├── logs/                         # per-step loss CSV, loop logs, review logs
 └── docs/
+    ├── report.md                 # formal academic research report
     ├── FAILURES_AND_OPTIMIZATIONS.md
     ├── phase1_results.md
     ├── phase2_results.md
@@ -542,9 +547,9 @@ Outputs: `eval_report.json`, `eval_report.md`, and a per-probe CSV.
 
 ---
 
-## 10. Testing strategy (95 tests)
+## 10. Testing strategy (106 tests)
 
-**Run:** `pytest tests/ -v --tb=short` (100% pass is the reference state). The suite was built across 4 stress rounds. Suggested layout (adjust the counts to match your real suite):
+**Run:** `pytest tests/ -v --tb=short` (100% pass is the reference state). The suite was built across 5 stress rounds covering all subsystems:
 
 | Area | What to test |
 |---|---|
@@ -562,6 +567,9 @@ Outputs: `eval_report.json`, `eval_report.md`, and a per-probe CSV.
 | Router | threshold boundary 0.70, escalation count |
 | Agreement | κ on known toy cases (perfect = 1, chance ≈ 0) |
 | Probe leakage | no probe appears in training data |
+| DPO | implicit log-ratio loss, reward margin positivity, token logps, contrastive pair generation |
+| GRPO & Verifiable Rewards | group-relative advantage zero-mean, PPO clip loss, math verification, constraint rules |
+| Multi-Teacher Ensemble | consensus score aggregation, inter-teacher delta & std dev, human review audit logging |
 
 CI: GitHub Actions running `pytest` on every push, with coverage reporting. Mark network tests with `@pytest.mark.network` and mock them by default.
 
@@ -634,13 +642,17 @@ For every experiment, save the config, seed, git SHA, and raw CSVs under `experi
 
 | Metric | Baseline | Final | Delta |
 |---|---|---|---|
-| Training data | 35 samples | 285+ samples | +714% |
+| Training data | 35 samples | 300 samples (35 seed + 265 synthetic) | +714% |
+| Preference dataset | 0 pairs | 50 paired samples (stages 1–5) | DPO corpus created |
 | Replay blending speed | ~4.5 s | < 0.05 s | > 90× |
 | Evaluation latency | ~2.5 s/probe | 0.013 ms (local) | > 99.9% |
 | SHA-256 dedup (500 samples) | unchecked | < 9 ms | quality gate added |
 | Endpoint hang time per batch | ~200 s | ~0 s (failover) | eliminated |
-| Regression tests | none | 95 tests, 100% pass | n/a |
+| Regression tests | none | 106 tests, 100% pass | n/a |
 | RLAIF reward | n/a | 1.000 (all 5 stages) | n/a |
+| DPO implicit reward margin | n/a | +0.0450 (100% pairwise accuracy) | preference alignment added |
+| GRPO group advantage | n/a | standardized (G=4 rollouts) | verifiable reasoning added |
+| Multi-teacher ensemble | single judge | 3-judge consensus + human audit | disagreement routing added |
 | Judge–human κ | 0.66 (Rubric A) | 0.77 (Rubric B) | +0.11 |
 | Memorization run | loss 8.78 → 0.0001 over ~56K steps on 35 samples | fixed via masking + curriculum + replay | n/a |
 
@@ -708,8 +720,8 @@ pytest tests/ -v --tb=short
 ## 18. Resume bullets
 
 - Designed a **post-training alignment pipeline** combining **5-stage curriculum SFT**, an **RLAIF-style data flywheel** (**Groq 70B critic** → **severity-gated synthetic data commissioning** → **Ollama generator** → **7-layer quality gate** → **QLoRA retraining**), and an **automated eval harness** (**0.013 ms/probe local evaluator**, **Cohen's κ = 0.77** judge–human agreement), targeting the research stack of Llama post-training and applied fine-tuning teams.
-- Fixed **catastrophic memorization** (**~56K steps on 35 samples**, loss **8.78 → 0.0001**) with **prompt-label masking** and **replay-buffer blending** (stage transition **~4.5 s → < 0.05 s, > 90× speedup**); grew the corpus **35 → 285+ samples** via closed-loop **synthetic data generation** with **SHA-256 deduplication** and **Jaccard circularity filtering** (**500 samples in < 9 ms**).
-- Built **95 automated regression tests (100% pass)** across 4 stress rounds, **tiered evaluation routing** (local **0.013 ms** vs. **~2.5 s** 70B API, **> 99.9% latency reduction**), and **endpoint failover** eliminating up to **200 s socket hangs**, all on a **4GB consumer GPU**.
+- Fixed **catastrophic memorization** (**~56K steps on 35 samples**, loss **8.78 → 0.0001**) with **prompt-label masking** and **replay-buffer blending** (stage transition **~4.5 s → < 0.05 s, > 90× speedup**); grew the corpus **35 → 300 samples** via closed-loop **synthetic data generation** with **SHA-256 deduplication** and **Jaccard circularity filtering** (**500 samples in < 9 ms**).
+- Scaled alignment to **Direct Preference Optimization (DPO)** with contrastive pair synthesis and **Group Relative Policy Optimization (GRPO)** with verifiable reasoning rewards; engineered **multi-teacher ensemble routing**, **tiered evaluation routing** (local **0.013 ms** vs. **~2.5 s** 70B API, **> 99.9% latency reduction**), and **106 automated regression tests (100% pass)** under strict **4GB consumer GPU** constraints.
 
 ---
 

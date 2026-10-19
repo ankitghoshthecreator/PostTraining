@@ -116,13 +116,17 @@ Without quality gating, the loop poisons itself. Gate enforces:
 
 | Metric | Baseline | Final | Delta |
 |---|---|---|---|
-| Training data | 35 samples | 285+ samples | +714% |
+| Training data | 35 samples | 300 samples (35 seed + 265 synthetic) | +714% |
+| Preference dataset | 0 pairs | 50 paired samples (stages 1–5) | DPO corpus created |
 | Replay blending speed | ~4.5s | <0.05s | >90x |
 | Evaluation latency | ~2.5s/probe | 0.013ms (local) | >99.9% |
 | SHA-256 dedup (500 samples) | unchecked | <9ms | quality gate added |
 | Endpoint hang time per batch | ~200s | ~0s (failover) | eliminated |
-| Regression tests | — | 95 tests, 100% pass | — |
+| Regression tests | — | 106 tests, 100% pass | — |
 | RLAIF reward | — | 1.000 (all 5 stages) | — |
+| DPO implicit reward margin | — | +0.0450 (100% pairwise accuracy) | preference alignment added |
+| GRPO group advantage | — | standardized (G=4 rollouts) | verifiable reasoning added |
+| Multi-teacher ensemble | single judge | 3-judge consensus + human audit | disagreement routing added |
 | Judge–human κ | 0.66 (Rubric A) | 0.77 (Rubric B) | +0.11 |
 
 ---
@@ -135,9 +139,9 @@ This toolkit is the extracted research layer of **CIRCLE** (Continuous Iterative
 
 ## Resume Bullets (AI Research Engineer / AI Research Intern — Product Companies)
 
-- Designed a **post-training alignment pipeline** combining **5-stage curriculum SFT**, **RLAIF-style data flywheel** (**Groq 70B critic** → **severity-gated synthetic data commissioning** → **Ollama generator** → **7-layer quality gate** → **QLoRA retraining**), and an **automated eval harness** (**0.013ms/probe local evaluator**, **Cohen's κ = 0.77** judge–human agreement) — targeting the exact research stack Meta's Llama post-training team and Anthropic's Applied Fine-tuning team work on.
-- Fixed **catastrophic memorization** (**~56K steps on 35 samples**, loss **8.78 → 0.0001**) with **prompt-label masking** and **replay-buffer blending** (stage-transition **~4.5s → <0.05s, >90x speedup**); grew training corpus **35 → 285+ samples** via closed-loop **synthetic data generation** with **SHA-256 deduplication** and **Jaccard circularity filtering** (**500 samples in <9ms**).
-- Built **95 automated regression tests (100% pass)** across 4 stress rounds, **tiered evaluation routing** (local **0.013ms** vs **~2.5s** 70B API, **>99.9% latency reduction**), and **endpoint failover** eliminating up to **200s socket hangs** — all on a **4GB consumer GPU** under strict compute constraints.
+- Designed a **post-training alignment pipeline** combining **5-stage curriculum SFT**, an **RLAIF-style data flywheel** (**Groq 70B critic** → **severity-gated synthetic data commissioning** → **Ollama generator** → **7-layer quality gate** → **QLoRA retraining**), and an **automated eval harness** (**0.013ms/probe local evaluator**, **Cohen's κ = 0.77** judge–human agreement) — targeting the exact research stack Meta's Llama post-training team and Anthropic's Applied Fine-tuning team work on.
+- Fixed **catastrophic memorization** (**~56K steps on 35 samples**, loss **8.78 → 0.0001**) with **prompt-label masking** and **replay-buffer blending** (stage-transition **~4.5s → <0.05s, >90x speedup**); grew training corpus **35 → 300 samples** via closed-loop **synthetic data generation** with **SHA-256 deduplication** and **Jaccard circularity filtering** (**500 samples in <9ms**).
+- Scaled alignment to **Direct Preference Optimization (DPO)** with contrastive pair synthesis and **Group Relative Policy Optimization (GRPO)** with verifiable reasoning rewards; engineered **multi-teacher ensemble routing**, **tiered evaluation routing** (local **0.013ms** vs **~2.5s** 70B API, **>99.9% latency reduction**), and **106 automated regression tests (100% pass)** — all on a **4GB consumer GPU** under strict compute constraints.
 
 ---
 

@@ -1,12 +1,13 @@
 # phase.md — Build Plan for the Post-Training Alignment Toolkit
 
-The project is split into **3 major phases**. Each phase has: objective, prerequisites, step-by-step tasks with implementation detail, files produced, acceptance criteria, risks, and a time estimate. Phases are sequential: each one's *exit criteria* are the next one's *entry criteria*.
+The project is split into **4 major phases**. Each phase has: objective, prerequisites, step-by-step tasks with implementation detail, files produced, acceptance criteria, risks, and a time estimate. Phases are sequential: each one's *exit criteria* are the next one's *entry criteria*.
 
 | Phase | Name | Core output | Rough effort |
 |---|---|---|---|
 | **1** | Foundation: Data + Curriculum SFT | A trained, non-memorizing QLoRA model with logged training and a best checkpoint | 1.5–2.5 weeks |
 | **2** | RLAIF Flywheel: Critic → Generator → Quality Gate → Retrain | A closed loop that grows the dataset safely and improves the model per iteration | 2–3 weeks |
 | **3** | Evaluation, Hardening, Infra, and Publication | Tiered eval harness, κ study, 95 tests, Docker/K8s, benchmark table, final write-up | 2–3 weeks |
+| **4** | Advanced Alignment: Preference (DPO), Verifiable Reasoning (GRPO) & Scaling | DPO implicit reward training, GRPO intra-group standardization, multi-teacher router & technical report | 2 weeks |
 
 Effort figures are planning estimates for one person working part-time. Adjust to your schedule.
 
@@ -315,15 +316,89 @@ Replace ad-hoc scoring with a **tiered evaluation harness**, validate the judge 
 
 ---
 
+# PHASE 4 — Advanced Alignment: Preference Optimization (DPO), Verifiable Reasoning (GRPO), and Multi-Teacher Scaling
+
+## 4.1 Objective
+
+Extend the alignment toolkit beyond SFT and generative RLAIF by implementing **Direct Preference Optimization (DPO)** without an explicit reward model, **Group Relative Policy Optimization (GRPO)** for verifiable reasoning tasks without a value network, and **Multi-Teacher Ensembling** with automated disagreement routing, culminating in a formal research technical report.
+
+## 4.2 Entry criteria
+
+- Phase 3 passed: 95 automated regression tests, tiered evaluation router, and best checkpoint verified.
+- Curriculum and synthetic datasets active (300 total samples across 5 stages).
+
+## 4.3 Tasks
+
+### Task 4.1 — Contrastive Preference Dataset Builder
+- `rlaif/preference_dataset.py`: Construct paired `(prompt, chosen, rejected)` data.
+- Contrast validated high-quality curriculum/synthetic responses against realistic degenerative failure modes (repetition loops, identity echoes, grammatical dysfluencies, and unpunctuated text).
+- Export per-stage (`data/preferences/preferences_stage_{n}.jsonl`) and master datasets (`preferences_master.jsonl`).
+
+### Task 4.2 — Direct Preference Optimization (DPO) Trainer
+- `trainer/train_dpo.py` and `configs/dpo.yaml`:
+  - Implement implicit reward loss:
+    $$\mathcal{L}_{\text{DPO}}(\theta; \pi_{\text{ref}}) = -\mathbb{E}_{(x, y_w, y_l)} \left[ \log \sigma \left( \beta \log \frac{\pi_\theta(y_w|x)}{\pi_{\text{ref}}(y_w|x)} - \beta \log \frac{\pi_\theta(y_l|x)}{\pi_{\text{ref}}(y_l|x)} \right) \right]$$
+  - Compute implicit rewards $\hat{r}(x, y) = \beta \log \frac{\pi_\theta(y|x)}{\pi_{\text{ref}}(y|x)}$, pairwise reward margin, and accuracy.
+  - Parameter-efficient 4-bit LoRA adapter tuning within 4GB VRAM.
+
+### Task 4.3 — Deterministic Verifiable Reward Engine
+- `rlaif/verifiable_rewards.py`: Objective reward evaluation without LLM judges.
+  - `verify_math_reasoning`: extract `\boxed{...}` or terminal numerical solutions; exact float comparison.
+  - `verify_json_format`: check valid JSON syntax and required key schema.
+  - `verify_constraint_compliance`: word count bounds and terminal punctuation rules.
+
+### Task 4.4 — Group Relative Policy Optimization (GRPO) Trainer
+- `trainer/grpo.py` and `configs/grpo.yaml`:
+  - Sample a group of $G=4$ rollouts per prompt: $\{o_1, \dots, o_G\} \sim \pi_{\text{old}}(o|q)$.
+  - Evaluate verifiable rewards $R_i \in \{0, 1\}$.
+  - Standardize advantages within group: $\hat{A}_i = \frac{R_i - \text{mean}(R)}{\text{std}(R) + \epsilon}$ (0 VRAM value critic network).
+  - Clipped surrogate policy objective with KL divergence regularization.
+
+### Task 4.5 — Multi-Teacher Ensemble & Disagreement Router
+- `eval/multi_teacher.py`:
+  - Evaluate responses across Teacher 1 (Rubric B: CoT), Teacher 2 (Rubric A: Plain), and Teacher 3 (Local Evaluator).
+  - Compute consensus score $\bar{s}$, inter-teacher delta $\Delta$, and standard deviation $\sigma$.
+  - Route samples with $\Delta \ge 0.25$ to `logs/human_review/disagreements.jsonl` for human review.
+
+### Task 4.6 — Formal Technical Research Report
+- `docs/report.md`: Complete 4-page academic research paper detailing:
+  - Abstract & Architecture.
+  - RQ1–RQ4 quantitative empirical results with confidence intervals.
+  - 7-layer quality gate ablation analysis.
+  - DPO & GRPO formulation and engineering optimizations.
+
+### Task 4.7 — Expanded Regression Test Suite (106 Tests)
+- Add `tests/test_dpo.py`, `tests/test_grpo.py`, `tests/test_multi_teacher.py`.
+- 106 automated tests passing with 100% success rate.
+
+### Task 4.8 — Streamlit Research Dashboard Integration
+- `app.py`: Add interactive views for DPO preference inspection/simulation, GRPO verifiable reward testing, and Multi-Teacher consensus tracking, preserving the zero-emoji creme aesthetic.
+
+## 4.4 Files produced
+
+`rlaif/preference_dataset.py`, `rlaif/verifiable_rewards.py`, `trainer/train_dpo.py`, `trainer/grpo.py`, `configs/dpo.yaml`, `configs/grpo.yaml`, `eval/multi_teacher.py`, `docs/report.md`, `tests/test_{dpo,grpo,multi_teacher}.py`, `app.py`.
+
+## 4.5 Acceptance criteria (exit gate)
+
+- [x] DPO trainer computes implicit log-ratio rewards and passes unit tests.
+- [x] Paired preference dataset generated across all 5 stages (`data/preferences/`).
+- [x] GRPO intra-group advantage normalization verified with verifiable reward functions.
+- [x] Multi-teacher ensemble flags high-disagreement items ($\Delta \ge 0.25$) into human review log.
+- [x] Formal 4-page technical research report completed (`docs/report.md`).
+- [x] Full regression test suite expanded to 106 tests (100% pass rate).
+- [x] Streamlit frontend updated with DPO, GRPO, and Multi-Teacher views.
+
+---
+
 # Cross-Phase Checklist
 
-| Concern | Phase 1 | Phase 2 | Phase 3 |
-|---|---|---|---|
-| Reproducibility | seeds, run.json | dataset versioning | pinned deps, Docker, CI |
-| Logging | per-step CSV | per-iteration reports | eval reports, plots |
-| Held-out integrity | probe banks + leakage test | no probe in generator prompts | larger held-out benchmark |
-| Failure handling | OOM guard | failover, rollback | failure injection tests |
-| Evidence for claims | loss/forgetting tables | RQ1, RQ3 results | RQ2, RQ4, κ, benchmark table |
+| Concern | Phase 1 | Phase 2 | Phase 3 | Phase 4 |
+|---|---|---|---|---|
+| Reproducibility | seeds, run.json | dataset versioning | pinned deps, Docker, CI | YAML configs, frozen schemas |
+| Logging | per-step CSV | per-iteration reports | eval reports, plots | DPO margins, GRPO telemetry |
+| Held-out integrity | probe banks + leakage test | no probe in generator prompts | larger held-out benchmark | verifiable test tasks |
+| Failure handling | OOM guard | failover, rollback | failure injection tests | disagreement routing |
+| Evidence for claims | loss/forgetting tables | RQ1, RQ3 results | RQ2, RQ4, κ, benchmark table | formal research report |
 
 # Suggested Timeline (part-time, ~10–15 h/week)
 

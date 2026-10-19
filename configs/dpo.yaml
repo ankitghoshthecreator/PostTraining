@@ -1,0 +1,25 @@
+# configs/dpo.yaml — Direct Preference Optimization (DPO) Hyperparameters
+
+beta: 0.1
+learning_rate: 5.0e-5
+weight_decay: 0.01
+warmup_ratio: 0.1
+max_seq_len: 512
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+gradient_checkpointing: true
+max_grad_norm: 1.0
+
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "k_proj"
+    - "v_proj"
+    - "o_proj"
+
+data:
+  preference_file: "data/preferences/preferences_master.jsonl"
+  train_split: 0.85

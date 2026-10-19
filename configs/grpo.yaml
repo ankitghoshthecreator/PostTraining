@@ -1,0 +1,18 @@
+# configs/grpo.yaml — Group Relative Policy Optimization (GRPO)
+
+group_size: 4
+clip_eps: 0.2
+kl_beta: 0.04
+learning_rate: 2.0e-5
+weight_decay: 0.01
+max_seq_len: 512
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 4
+
+reward_functions:
+  - type: math_exact
+    tolerance: 1.0e-4
+  - type: format_constraint
+    must_end_with: [".", "!", "?"]
+  - type: json_schema
+    required_keys: ["answer"]
